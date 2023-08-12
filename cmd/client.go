@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,8 @@ var (
 	ErrInvalid         = errors.New("invalid data")
 	ErrNotNumber       = errors.New("not a number")
 )
+
+const timeFormat = "Jan/02 @15:04"
 
 type item struct {
 	Task        string
@@ -75,4 +78,59 @@ func getItems(url string) ([]item, error) {
 func getAll(apiRoot string) ([]item, error) {
 	u := fmt.Sprintf("%s/todo", apiRoot)
 	return getItems(u)
+}
+
+func getOne(apiRoot string, id int) (item, error) {
+	u := fmt.Sprintf("%s/todo/%d", apiRoot, id)
+	items, err := getItems(u)
+	if err != nil {
+		return item{}, err
+	}
+	if len(items) != 1 {
+		return item{}, fmt.Errorf("%w: Invalid results", ErrInvalid)
+	}
+	return items[0], nil
+}
+
+func sendRequest(url, method, contentType string,
+	expStatus int, body io.Reader) error {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return err
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	r, err := newClient().Do(req)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+	if r.StatusCode != expStatus {
+		msg, err := io.ReadAll(r.Body)
+		if err != nil {
+			return fmt.Errorf("cannot read body: %w", err)
+		}
+		err = ErrInvalidResponse
+		if r.StatusCode == http.StatusNotFound {
+			err = ErrNotFound
+		}
+		return fmt.Errorf("%w: %s", err, msg)
+	}
+	return nil
+}
+
+func addItem(apiRoot, task string) error {
+	u := fmt.Sprintf("%s/todo", apiRoot)
+	item := struct {
+		Task string `json:"task"`
+	}{
+		Task: task,
+	}
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(item); err != nil {
+		return err
+	}
+
+	return sendRequest(u, http.MethodPost, "application/json", http.StatusCreated, &body)
 }
