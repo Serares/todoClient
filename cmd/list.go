@@ -74,7 +74,7 @@ func printAll(out io.Writer, items []item) error {
 			done = "X"
 		}
 
-		fmt.Fprintf(w, "- %s\t%d\t%s\t\n", done, k+1, v.Task)
+		fmt.Fprintf(w, "%s - \t%d\t%s\t\n", done, k+1, v.Task)
 	}
 
 	return w.Flush()
