@@ -31,6 +31,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+type listConfig struct {
+	url    string
+	active bool
+}
+
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:           "list",
@@ -38,8 +43,12 @@ var listCmd = &cobra.Command{
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		apiUrl := viper.GetString("api-root")
-
-		return listAction(os.Stdout, apiUrl)
+		isActive := viper.GetBool("active")
+		cfg := listConfig{
+			url:    apiUrl,
+			active: isActive,
+		}
+		return listAction(os.Stdout, &cfg)
 	},
 }
 
@@ -55,10 +64,13 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	listCmd.Flags().BoolP("active", "a", false, "display only active tasks")
+	viper.BindPFlag("active", listCmd.Flags().Lookup("active"))
+
 }
 
-func listAction(out io.Writer, apiRoot string) error {
-	items, err := getAll(apiRoot)
+func listAction(out io.Writer, cfg *listConfig) error {
+	items, err := getAll(cfg)
 	if err != nil {
 		return err
 	}

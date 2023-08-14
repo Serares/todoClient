@@ -116,7 +116,7 @@ func TestListAction(t *testing.T) {
 			}
 
 			var out bytes.Buffer
-			err := listAction(&out, url)
+			err := listAction(&out, &listConfig{url: url})
 			if tc.expError != nil {
 				if err == nil {
 					t.Fatalf("Expected error %q, got no error.", tc.expError)

@@ -75,8 +75,13 @@ func getItems(url string) ([]item, error) {
 	return resp.Results, nil
 }
 
-func getAll(apiRoot string) ([]item, error) {
-	u := fmt.Sprintf("%s/todo", apiRoot)
+func getAll(cfg *listConfig) ([]item, error) {
+	u := fmt.Sprintf("%s/todo", cfg.url)
+
+	if cfg.active {
+		u += "?active"
+	}
+
 	return getItems(u)
 }
 
